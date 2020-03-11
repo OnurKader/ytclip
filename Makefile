@@ -9,5 +9,5 @@ clean:
 	@rm -f ytclip
 
 build:
-	$(CC) -o $(PROG) $(CFLAGS) $(CLIBS) ytclip.cpp
+	$(CC) -o $(PROG) ytclip.cpp $(CFLAGS) $(CLIBS)
 

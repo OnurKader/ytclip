@@ -1,7 +1,6 @@
-// gcc -o xclipget xclipget.c -lX11
 #include <X11/Xlib.h>
-#include <limits.h>
-#include <stdio.h>
+#include <climits>
+#include <cstdio>
 
 Bool PrintSelection(Display *display,
 					Window window,
@@ -50,7 +49,7 @@ Bool PrintSelection(Display *display,
 		return False;
 }
 
-int main()
+int main(int argc, char **argv)
 {
 	Display *display = XOpenDisplay(NULL);
 	unsigned long color = BlackPixel(display, DefaultScreen(display));
@@ -62,3 +61,4 @@ int main()
 	XCloseDisplay(display);
 	return !result;
 }
+
