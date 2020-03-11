@@ -1,6 +1,17 @@
 #include <X11/Xlib.h>
+#include <regex>
 #include <climits>
 #include <cstdio>
+#include <string>
+#include <unordered_map>
+
+/* TODO:
+ * popen()
+ * wait4()
+ * clone()
+ * vfork()
+ * constexpr const uint8_t BUFF_SIZE = 128U;
+*/
 
 Bool PrintSelection(Display *display,
 					Window window,
