@@ -1,8 +1,8 @@
 #include <X11/Xlib.h>
-#include <iomanip>
 #include <climits>
 #include <csignal>
 #include <cstdio>
+#include <iomanip>
 #include <iostream>
 #include <regex>
 #include <string>
@@ -13,10 +13,12 @@
 constexpr const uint16_t BUFF_SIZE = 256U;
 constexpr const uint16_t SEED = 42069U;
 
-Display *display = nullptr;
-Window window;
+static Display *display = nullptr;
+static Window window;
 
-Bool getSelection(const char *bufname, const char *fmtname, char buff[BUFF_SIZE])
+bool getSelection(const char *bufname,
+				  const char *fmtname,
+				  char buff[BUFF_SIZE])
 {
 	char *result;
 	unsigned long ressize, restail;
@@ -31,7 +33,8 @@ Bool getSelection(const char *bufname, const char *fmtname, char buff[BUFF_SIZE]
 	do
 	{
 		XNextEvent(display, &event);
-	} while(event.type != SelectionNotify || event.xselection.selection != bufid);
+	} while(event.type != SelectionNotify ||
+			event.xselection.selection != bufid);
 
 	if(event.xselection.property)
 	{
@@ -49,15 +52,16 @@ Bool getSelection(const char *bufname, const char *fmtname, char buff[BUFF_SIZE]
 						   (unsigned char **)&result);
 
 		if(fmtid == incrid)
-			printf("Buffer is too large and INCR reading is not implemented yet.\n");
+			printf("Buffer is too large and INCR reading is not implemented "
+				   "yet.\n");
 		else
 			sprintf(buff, "%.*s", (int)ressize, result);
 
 		XFree(result);
-		return True;
+		return true;
 	}
 	else	// request failed, e.g. owner can't convert to the target format
-		return False;
+		return false;
 }
 
 void handleInterrupt(int sig)
@@ -76,10 +80,13 @@ void initXStuff()
 		display, DefaultRootWindow(display), 0, 0, 1, 1, 0, color, color);
 }
 
-bool isYouTube(const char *url, std::cmatch &matches)
+bool isYouTube(const char *url, std::cmatch *matches = nullptr)
 {
 	std::regex regex(R"(^(https?://)?(www\.)?(youtube.com|youtu.be))");
-	return std::regex_search(url, matches, regex);
+	if(matches)
+		return std::regex_search(url, *matches, regex);
+	else
+		return std::regex_search(url, regex);
 }
 
 static constexpr const char *example_urls[] = {
@@ -93,10 +100,10 @@ static constexpr const char *example_urls[] = {
 
 void checkValidURL()
 {
-	std::cmatch _;
 	for(const auto &url: example_urls)
 	{
-		std::cout << std::left << std::setw(52) << url << " -> is" << (isYouTube(url, _) ? "     " : " \033[1;31mnot\033[m ")
+		std::cout << std::left << std::setw(52) << url << " -> is"
+				  << (isYouTube(url) ? "     " : " \033[1;31mnot\033[m ")
 				  << "a valid YouTube URL\n";
 	}
 }
@@ -130,10 +137,7 @@ std::ostream &operator<<(std::ostream &os, const std::vector<const char *> &vec)
 	return os;
 }
 
-inline void cls()
-{
-	printf("\033[2J\033[3J\033[H");
-}
+inline void cls() { printf("\033[2J\033[3J\033[H"); }
 
 int main(int argc, char **argv)
 {
@@ -184,4 +188,3 @@ int main(int argc, char **argv)
 
 	return 0;
 }
-
