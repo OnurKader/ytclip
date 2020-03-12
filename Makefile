@@ -1,13 +1,14 @@
 CC=g++
 CFLAGS= -std=c++17 -O3 -Wall -Wextra -Wshadow -Wpedantic
 CLIBS= -lX11
-PROG=ytclip
+SRC=ytclip.cpp
+PROG=${SRC:.cpp=}
 
 all: build
 
 clean:
-	@rm -f ytclip
+	@rm -f $(PROG)
 
 build:
-	$(CC) -o $(PROG) ytclip.cpp xxHash/xxhash.o $(CFLAGS) $(CLIBS)
+	$(CC) -o $(PROG) $(SRC) $(CFLAGS) $(CLIBS)
 
