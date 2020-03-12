@@ -1,12 +1,12 @@
-#include "xxHash/xxhash.h"
-
 #include <X11/Xlib.h>
 #include <climits>
+#include <csignal>
 #include <cstdio>
 #include <regex>
 #include <string>
+#include <thread>
 #include <unistd.h>
-#include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 /* TODO:
@@ -16,14 +16,13 @@
  * vfork()
  */
 
-constexpr const uint8_t BUFF_SIZE = 128U;
-constexpr const uint8_t SEED = 4U;
+constexpr const uint16_t BUFF_SIZE = 256U;
+constexpr const uint16_t SEED = 42069U;
 
-Bool getSelection(Display *display,
-				  Window window,
-				  const char *bufname,
-				  const char *fmtname,
-				  char buff[128])
+Display *display = nullptr;
+Window window;
+
+Bool getSelection(const char *bufname, const char *fmtname, char buff[BUFF_SIZE])
 {
 	char *result;
 	unsigned long ressize, restail;
@@ -67,45 +66,60 @@ Bool getSelection(Display *display,
 		return False;
 }
 
-// Probably popen, store the outputs in a vector of strings
-// printf on seperate lines, mutex stdio (?)
+void handleInterrupt(int sig)
+{
+	XDestroyWindow(display, window);
+	XCloseDisplay(display);
 
-// TODO Hash
-/*
-	XXH64_hash_t hash = XXH64(buffer, size, seed);
-*/
+	exit(sig);
+}
+
+void printSet(const std::unordered_set<std::string>& uset)
+{
+	for(const auto& elem: uset)
+	{
+		printf("%s\t", elem.c_str());
+	}
+}
 
 int main(int argc, char **argv)
 {
+	signal(SIGINT, handleInterrupt);
+
+	std::unordered_set<std::string> hash_table;
+	std::vector<FILE *> processes;
 	char clip_buffer[BUFF_SIZE];
-	Display *display = XOpenDisplay(NULL);
+
+	display = XOpenDisplay(NULL);
 	unsigned long color = BlackPixel(display, DefaultScreen(display));
-	Window window = XCreateSimpleWindow(
+	window = XCreateSimpleWindow(
 		display, DefaultRootWindow(display), 0, 0, 1, 1, 0, color, color);
-	/*
 	while(true)
 	{
-		Bool result =
-			getSelection(display, window, "CLIPBOARD", "UTF8_STRING", clip_buffer) ||
-			getSelection(display, window, "CLIPBOARD", "STRING", clip_buffer);
-		printf("Clip String: %s\n", clip_buffer);
-		XXH64_hash_t clip_hash = XXH64(clip_buffer, sizeof(clip_buffer), SEED);
-		printf("Clip Hash: %lu\n", clip_hash);
+		Bool result = getSelection("CLIPBOARD", "UTF8_STRING", clip_buffer) ||
+					  getSelection("CLIPBOARD", "STRING", clip_buffer);
+
+		std::string clip_string(clip_buffer);
+		hash_table.insert(clip_string);
+		printf("Size: %zu\n", hash_table.size());
+		printSet(hash_table);
 		usleep(333'333);
 	}
-	*/
 
-	/* const char prog[] = "list -a"; */
-	const char prog[] = "/tmp/sleep-talk";
-	FILE *list_output = popen(prog, "r");
+	/*
+	const char prog[] = "sleep 5";
 	char buff[256];
+	FILE *list_output = popen(prog, "r");
+	printf("first\n");
 	FILE *prog2 = popen(prog, "r");
-	pclose(prog2);
-	pclose(list_output);
-	FILE *output = fopen("/tmp/date-data", "r+");
+	printf("second\n");
+	FILE *output = fopen("/tmp/date-data", "r");
 	while(fgets(buff, sizeof(buff), output))
 		fputs(buff, stdout);
 	fclose(output);
+	pclose(prog2);
+	pclose(list_output);
+	*/
 
 	XDestroyWindow(display, window);
 	XCloseDisplay(display);
