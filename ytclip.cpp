@@ -1,5 +1,6 @@
-#include <X11/Xlib.h>
 #include "xxHash/xxhash.h"
+
+#include <X11/Xlib.h>
 #include <climits>
 #include <cstdio>
 #include <regex>
@@ -13,7 +14,7 @@
  * wait4()
  * clone()
  * vfork()
-*/
+ */
 
 constexpr const uint8_t BUFF_SIZE = 128U;
 constexpr const uint8_t SEED = 4U;
@@ -81,6 +82,7 @@ int main(int argc, char **argv)
 	unsigned long color = BlackPixel(display, DefaultScreen(display));
 	Window window = XCreateSimpleWindow(
 		display, DefaultRootWindow(display), 0, 0, 1, 1, 0, color, color);
+	/*
 	while(true)
 	{
 		Bool result =
@@ -91,15 +93,19 @@ int main(int argc, char **argv)
 		printf("Clip Hash: %lu\n", clip_hash);
 		usleep(333'333);
 	}
+	*/
 
-	/* printf("\n"); */
 	/* const char prog[] = "list -a"; */
-	/* FILE *list_output = popen(prog, "r"); */
-	/* char buff[256]; */
-	/* size_t read_count = 0ULL; */
-	/* while(fgets(buff, sizeof(buff), list_output)) */
-	/* 	printf("%s", buff); */
-	/* pclose(list_output); */
+	const char prog[] = "/tmp/sleep-talk";
+	FILE *list_output = popen(prog, "r");
+	char buff[256];
+	FILE *prog2 = popen(prog, "r");
+	pclose(prog2);
+	pclose(list_output);
+	FILE *output = fopen("/tmp/date-data", "r+");
+	while(fgets(buff, sizeof(buff), output))
+		fputs(buff, stdout);
+	fclose(output);
 
 	XDestroyWindow(display, window);
 	XCloseDisplay(display);
