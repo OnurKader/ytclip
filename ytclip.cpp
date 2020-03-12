@@ -1,20 +1,14 @@
 #include <X11/Xlib.h>
+#include <iomanip>
 #include <climits>
 #include <csignal>
 #include <cstdio>
+#include <iostream>
 #include <regex>
 #include <string>
 #include <thread>
 #include <unistd.h>
-#include <unordered_set>
 #include <vector>
-
-/* TODO:
- * popen()
- * wait4()
- * clone()
- * vfork()
- */
 
 constexpr const uint16_t BUFF_SIZE = 256U;
 constexpr const uint16_t SEED = 42069U;
@@ -74,36 +68,98 @@ void handleInterrupt(int sig)
 	exit(sig);
 }
 
-void printSet(const std::unordered_set<std::string>& uset)
+void initXStuff()
 {
-	for(const auto& elem: uset)
+	display = XOpenDisplay(NULL);
+	unsigned long color = BlackPixel(display, DefaultScreen(display));
+	window = XCreateSimpleWindow(
+		display, DefaultRootWindow(display), 0, 0, 1, 1, 0, color, color);
+}
+
+bool isYouTube(const char *url, std::cmatch &matches)
+{
+	std::regex regex(R"(^(https?://)?(www\.)?(youtube.com|youtu.be))");
+	return std::regex_search(url, matches, regex);
+}
+
+static constexpr const char *example_urls[] = {
+	"https://www.youtube.com/watch?v=0_20-hj4B213k",
+	"http://youtube.com/watch?v=anan_l0l-69",
+	"youtu.be/watch?v=abde_F91283-23&index=27",
+	"www.google.com/",
+	"http://www.youtube.com/blaze-it",
+	"http://www.duckduckgo.com/?q=youtube.com",
+	"https://duckduckgo.com/?q=https://www.youtube.com/"};
+
+void checkValidURL()
+{
+	std::cmatch _;
+	for(const auto &url: example_urls)
 	{
-		printf("%s\t", elem.c_str());
+		std::cout << std::left << std::setw(52) << url << " -> is" << (isYouTube(url, _) ? "     " : " \033[1;31mnot\033[m ")
+				  << "a valid YouTube URL\n";
 	}
+}
+
+void insertURL(std::vector<const char *> &vec, const char *url)
+{
+	if(vec.empty())
+	{
+		vec.push_back(url);
+		return;
+	}
+
+	bool url_is_in_vec = false;
+	for(const auto &elem: vec)
+	{
+		if(!strcmp(elem, url))
+		{
+			url_is_in_vec = true;
+			break;
+		}
+	}
+
+	if(!url_is_in_vec)
+		vec.push_back(url);
+}
+
+std::ostream &operator<<(std::ostream &os, const std::vector<const char *> &vec)
+{
+	for(const auto &elem: vec)
+		os << elem << ' ';
+	return os;
+}
+
+inline void cls()
+{
+	printf("\033[2J\033[3J\033[H");
 }
 
 int main(int argc, char **argv)
 {
 	signal(SIGINT, handleInterrupt);
 
-	std::unordered_set<std::string> hash_table;
+	std::vector<const char *> valid_url_vector;
 	std::vector<FILE *> processes;
+	std::cmatch matches;
 	char clip_buffer[BUFF_SIZE];
 
-	display = XOpenDisplay(NULL);
-	unsigned long color = BlackPixel(display, DefaultScreen(display));
-	window = XCreateSimpleWindow(
-		display, DefaultRootWindow(display), 0, 0, 1, 1, 0, color, color);
+	initXStuff();
+
+	// Clear the screen so reading is easier
+	cls();
+
 	while(true)
 	{
 		Bool result = getSelection("CLIPBOARD", "UTF8_STRING", clip_buffer) ||
 					  getSelection("CLIPBOARD", "STRING", clip_buffer);
 
-		std::string clip_string(clip_buffer);
-		hash_table.insert(clip_string);
-		printf("Size: %zu\n", hash_table.size());
-		printSet(hash_table);
+		insertURL(valid_url_vector, strdup(clip_buffer));
+		printf("Size: %zu\t", valid_url_vector.size());
+		printf("\033[1H");
+		fflush(stdout);
 		usleep(333'333);
+		std::cout << valid_url_vector << std::endl;
 	}
 
 	/*
@@ -123,6 +179,8 @@ int main(int argc, char **argv)
 
 	XDestroyWindow(display, window);
 	XCloseDisplay(display);
+
+	checkValidURL();
 
 	return 0;
 }
