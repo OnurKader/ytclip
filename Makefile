@@ -1,5 +1,5 @@
 CC=g++
-CFLAGS= -std=c++17 -O3 -Wall -Wextra -Wshadow -Wpedantic
+CFLAGS= -std=c++17 -O3 -Wall -Wextra -Wshadow -Wpedantic -g
 CLIBS= -lX11
 SRC=ytclip.cpp
 PROG=${SRC:.cpp=}
