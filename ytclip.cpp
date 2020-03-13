@@ -2,6 +2,7 @@
 #include <climits>
 #include <csignal>
 #include <cstdio>
+#include <getopt.h>
 #include <iomanip>
 #include <iostream>
 #include <regex>
@@ -11,7 +12,6 @@
 #include <vector>
 
 constexpr const uint16_t BUFF_SIZE = 256U;
-constexpr const uint16_t SEED = 42069U;
 
 static Display *display = nullptr;
 static Window window;
@@ -69,24 +69,35 @@ void handleInterrupt(int sig)
 	XDestroyWindow(display, window);
 	XCloseDisplay(display);
 
-	exit(sig);
+	exit(sig - 2);
 }
 
 void initXStuff()
 {
-	display = XOpenDisplay(NULL);
+	display = XOpenDisplay(nullptr);
 	unsigned long color = BlackPixel(display, DefaultScreen(display));
 	window = XCreateSimpleWindow(
 		display, DefaultRootWindow(display), 0, 0, 1, 1, 0, color, color);
 }
 
-bool isYouTube(const char *url, std::cmatch *matches = nullptr)
+bool isYouTube(const char *url)
 {
 	std::regex regex(R"(^(https?://)?(www\.)?(youtube.com|youtu.be))");
-	if(matches)
-		return std::regex_search(url, *matches, regex);
-	else
-		return std::regex_search(url, regex);
+	return std::regex_search(url, regex);
+}
+
+const char *getYouTubeID(const char *url)
+{
+	if(!isYouTube(url))
+		return nullptr;
+	std::regex regex(R"(watch\?v=([[:w:]-]+))");
+	std::cmatch matches;
+
+	if(std::regex_search(url, matches, regex))
+	{
+		return strdup(matches.str(1).c_str());
+	}
+	return nullptr;
 }
 
 static constexpr const char *example_urls[] = {
@@ -108,8 +119,11 @@ void checkValidURL()
 	}
 }
 
-void insertURL(std::vector<const char *> &vec, const char *url)
+void insertStrLikeSet(std::vector<const char *> &vec, const char *url)
 {
+	if(!url)
+		return;
+
 	if(vec.empty())
 	{
 		vec.push_back(url);
@@ -144,8 +158,8 @@ int main(int argc, char **argv)
 	signal(SIGINT, handleInterrupt);
 
 	std::vector<const char *> valid_url_vector;
-	std::vector<FILE *> processes;
-	std::cmatch matches;
+	std::vector<const char *> valid_id_vector;
+	//	std::vector<FILE *> processes;
 	char clip_buffer[BUFF_SIZE];
 
 	initXStuff();
@@ -157,13 +171,14 @@ int main(int argc, char **argv)
 	{
 		Bool result = getSelection("CLIPBOARD", "UTF8_STRING", clip_buffer) ||
 					  getSelection("CLIPBOARD", "STRING", clip_buffer);
+		if(!result)
+			goto loops_end;
 
-		insertURL(valid_url_vector, strdup(clip_buffer));
-		printf("Size: %zu\t", valid_url_vector.size());
-		printf("\033[1H");
-		fflush(stdout);
-		usleep(333'333);
-		std::cout << valid_url_vector << std::endl;
+		insertStrLikeSet(valid_url_vector, strdup(clip_buffer));
+		insertStrLikeSet(valid_id_vector,
+						 getYouTubeID(valid_url_vector.back()));
+	loops_end:
+		usleep(333333);
 	}
 
 	/*
