@@ -98,16 +98,19 @@ void usage()
 			  << std::endl;
 }
 
-std::optional<std::string> getYouTubeID(const std::string_view url)
+std::optional<std::string> getYouTubeID(const std::string &url)
 {
-	std::optional<std::string> id;
 	if(!isYouTube(url))
 		return std::nullopt;
 
-	if(auto match = ctre::match<R"(watch\?v=([a-zA-Z0-9\-]+))">(url))
-		return match.get<1>().str();
+	if(const auto match = ctre::match<R"(watch\?v=([a-zA-Z0-9\-]+))">(url))
+	{
+		const auto str = match.get<1>().str();
+		fmt::print("ID in func: {}\n", str);
+		return str;
+	}
 
-	return id;
+	return std::nullopt;
 }
 
 [[maybe_unused]] static constexpr std::array example_urls {
@@ -181,6 +184,7 @@ int main(int argc, char **argv)
 		std::this_thread::sleep_for(400ms);
 		fmt::print("Clipboard: {}\t", clip_buffer);
 		fmt::print("It's {}valid\n", (isYouTube(clip_buffer) ? "" : "not "));
+		fmt::print("ID: {}\n", getYouTubeID(clip_buffer).value_or("NaN"));
 	}
 
 	return 0;
