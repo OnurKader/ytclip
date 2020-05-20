@@ -3,6 +3,7 @@
 
 #include <X11/Xlib.h>
 #include <array>
+#include <chrono>
 #include <climits>
 #include <csignal>
 #include <fmt/format.h>
@@ -10,19 +11,23 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <thread>
 #include <unistd.h>
 #include <vector>
 
 #define DEBUG 1
 
+using namespace std::chrono_literals;
 using namespace ctre::literals;
 
 static Display *display = nullptr;
 static Window window;
 
+// TODO: Design Choice!!! std::future std::async or popen()??
+
 bool getSelection(const char *bufname, const char *fmtname, std::string &buff)
 {
-	char *result;
+	unsigned char *result = nullptr;
 	uint64_t ressize, restail;
 	int resbits;
 	Atom bufid = XInternAtom(display, bufname, False), fmtid = XInternAtom(display, fmtname, False),
@@ -49,7 +54,7 @@ bool getSelection(const char *bufname, const char *fmtname, std::string &buff)
 						   &resbits,
 						   &ressize,
 						   &restail,
-						   reinterpret_cast<unsigned char **>(&result));
+						   &result);
 
 		if(fmtid == incrid)
 			fmt::print("Buffer is too large and INCR reading is not implemented "
@@ -64,7 +69,7 @@ bool getSelection(const char *bufname, const char *fmtname, std::string &buff)
 		return false;
 }
 
-void handleInterrupt(const int sig)
+void handleInterrupt(int sig)
 {
 	XDestroyWindow(display, window);
 	XCloseDisplay(display);
@@ -90,10 +95,8 @@ void usage()
 				 "-f --format takes in a video format like 22 or best\n"
 				 "-o --output takes in an output format specified by youtube-dl"
 			  << std::endl;
-	exit(1);
 }
 
-// FIXME: return type shouldn't be const char*
 std::optional<std::string> getYouTubeID(const std::string_view url)
 {
 	std::optional<std::string> id;
@@ -120,49 +123,39 @@ int main(int argc, char **argv)
 {
 	signal(SIGINT, handleInterrupt);
 
-	std::string format {"bestvideo+bestaudio"};
-	std::string output {"%(title)s.%(ext)s"};
-
-	// FIXME: These should hold std::string's
-	std::vector<const char *> valid_url_vector;
-	std::vector<const char *> valid_id_vector;
+	// FIXME: Why don't I just store one vector and pass that to download?
+	std::vector<std::string> valid_url_vector;
+	std::vector<std::string> valid_id_vector;
 
 	// TODO: Make a cleaner DownloadInfo class/struct, no need for privacy
 	//	std::vector<DownloadInfo> processes;
 	std::string clip_buffer;
 	std::string prev_clip_buffer;
 
-	// getopt scope
+	// Thanks clang-format, you've really fucked this part up
+	cxxopts::Options options(
+		"ytclip", "A wrapper around youtube-dl to download videos from the clipboard in parallel");
+	options.add_options()("f,format",
+						  "Specify a video/audio format",
+						  cxxopts::value<std::string>()->default_value("bestvideo+bestaudio"))(
+		"o,output",
+		"Specify an output file format",
+		cxxopts::value<std::string>()->default_value("%(title)s.%(ext)s"))("h,help", "Print usage")(
+		"v,version", "Print usage");
+
+	auto arg_result = options.parse(argc, argv);
+
+	if(arg_result.count("help") || arg_result.count("version"))
 	{
-		int c;
-		while(true)
-		{
-			int option_index = 0;
-			static struct option long_options[] = {{"format", required_argument, nullptr, 'f'},
-												   {"output", required_argument, nullptr, 'o'},
-												   {"help", no_argument, nullptr, 'h'},
-												   {"version", no_argument, nullptr, 'v'},
-												   {nullptr, 0, nullptr, 0}};
-			c = getopt_long(argc, argv, "hvf:o:", long_options, &option_index);
-			if(c == -1)
-				break;
+		usage();
+		return 1;
+	}
 
-			switch(c)
-			{
-				case 'h':
-				case 'v': usage(); break;
-				case 'f': strcpy(format, optarg); break;
-				case 'o': strcpy(output, optarg); break;
-				default: usage();
-			}
-		}
-	}	 // end of getopt
-
-	// Clear the screen and put cursor at top left so reading and
-	// further printing is easier
+	const std::string format = arg_result["format"].as<std::string>();
+	const std::string output = arg_result["output"].as<std::string>();
 
 	const std::string program =
-		fmt::sprintf("youtube-dl --newline -wcif %s -o '%s' ", format, output);
+		fmt::format("youtube-dl --newline -wcif {} -o '{}' ", std::move(format), std::move(output));
 
 	// Open a window and get the clipboard information from that
 	initXStuff();
@@ -170,8 +163,15 @@ int main(int argc, char **argv)
 	// Variable to hold the current line index of the output buffer for the processes
 	while(true)
 	{
-		bool result = getSelection("CLIPBOARD", "UTF8_STRING", clip_buffer) ||
-					  getSelection("CLIPBOARD", "STRING", clip_buffer);
+		const bool result = getSelection("CLIPBOARD", "UTF8_STRING", clip_buffer) ||
+							getSelection("CLIPBOARD", "STRING", clip_buffer);
+
+		if(!result)
+			fmt::print(stderr, "I have no idea what this is for\n");
+
+		std::this_thread::sleep_for(400ms);
+		fmt::print("Clipboard: {}\t", clip_buffer);
+		fmt::print("It's {} valid\n", (isYouTube(clip_buffer) ? "" : "not"));
 	}
 
 	return 0;
