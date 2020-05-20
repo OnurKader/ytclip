@@ -1,6 +1,8 @@
 include_rules
 
-EXE := ytclip
+EXE := ../bin/ytclip
+CXX_LIBS += -lfmt
 
 : foreach *.cpp | *.hpp |> !cxx |> {objs}
 : {objs} |> $(CXX) -o %o %f $(CXX_LIBS) $(CXX_FLAGS) -I../include |> $(EXE)
+

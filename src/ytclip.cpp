@@ -7,6 +7,7 @@
 #include <csignal>
 #include <fmt/format.h>
 #include <fmt/printf.h>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <unistd.h>
@@ -14,10 +15,12 @@
 
 #define DEBUG 1
 
+using namespace ctre::literals;
+
 static Display *display = nullptr;
 static Window window;
 
-bool getSelection(const char *bufname, const char *fmtname, std::string& buff)
+bool getSelection(const char *bufname, const char *fmtname, std::string &buff)
 {
 	char *result;
 	uint64_t ressize, restail;
@@ -78,8 +81,7 @@ void initXStuff()
 
 bool isYouTube(const std::string_view url)
 {
-	std::regex regex(R"(^(https?://)?(www\.)?(youtube.com|youtu.be))");
-	return std::regex_search(url, regex);
+	return ctre::search<R"(^(https?://)?(www\.)?(youtube.com|youtu.be))">(url);
 }
 
 void usage()
@@ -92,18 +94,16 @@ void usage()
 }
 
 // FIXME: return type shouldn't be const char*
-const char *getYouTubeID(const char *url)
+std::optional<std::string> getYouTubeID(const std::string_view url)
 {
-	const char *ret_val = nullptr;
+	std::optional<std::string> id;
 	if(!isYouTube(url))
-		return ret_val;
-	std::regex regex(R"(watch\?v=([[:w:]-]+))");
-	std::cmatch matches;
+		return std::nullopt;
 
-	if(std::regex_search(url, matches, regex))
-		ret_val = strdup(matches.str(1).c_str());
+	if(auto match = ctre::match<R"(watch\?v=([a-zA-Z0-9\-]+))">(url))
+		return match.get<1>().str();
 
-	return ret_val;
+	return id;
 }
 
 static constexpr std::array example_urls {
@@ -128,7 +128,7 @@ int main(int argc, char **argv)
 	std::vector<const char *> valid_id_vector;
 
 	// TODO: Make a cleaner DownloadInfo class/struct, no need for privacy
-	std::vector<DownloadInfo> processes;
+	//	std::vector<DownloadInfo> processes;
 	std::string clip_buffer;
 	std::string prev_clip_buffer;
 
