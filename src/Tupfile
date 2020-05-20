@@ -1,0 +1,6 @@
+include_rules
+
+EXE := ytclip
+
+: foreach *.cpp | *.hpp |> !cxx |> {objs}
+: {objs} |> $(CXX) -o %o %f $(CXX_LIBS) $(CXX_FLAGS) -I../include |> $(EXE)
