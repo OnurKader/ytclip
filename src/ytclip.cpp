@@ -9,10 +9,10 @@
 #include <fmt/format.h>
 #include <fmt/printf.h>
 #include <optional>
+#include <process.hpp>
 #include <string>
 #include <string_view>
 #include <thread>
-#include <unistd.h>
 #include <vector>
 
 #define DEBUG 1
@@ -24,6 +24,7 @@ static Display *display = nullptr;
 static Window window;
 
 // TODO: Design Choice!!! std::future std::async or popen()??
+// Maybe tiny-process-library?
 
 bool getSelection(const char *bufname, const char *fmtname, std::string &buff)
 {
@@ -109,7 +110,7 @@ std::optional<std::string> getYouTubeID(const std::string_view url)
 	return id;
 }
 
-static constexpr std::array example_urls {
+[[maybe_unused]] static constexpr std::array example_urls {
 	"http://www.youtube.com/watch?v=9_I7nbckQU8",	 // Unlisted
 	"https://youtube.com/watch?v=uIitNw0Q7yg",
 	"https://www.youtube.com/watch?v=8YWl7tDGUPA",
@@ -151,6 +152,14 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
+	/*
+	TinyProcessLib::Process process1a("echo Hello World", "", [](const char *bytes, size_t n) {
+		std::string temp(bytes, n);
+		std::reverse(temp.begin(), temp.end());
+		fmt::print("Hello World : {}\n", temp);
+	});
+	*/
+
 	const std::string format = arg_result["format"].as<std::string>();
 	const std::string output = arg_result["output"].as<std::string>();
 
@@ -171,7 +180,7 @@ int main(int argc, char **argv)
 
 		std::this_thread::sleep_for(400ms);
 		fmt::print("Clipboard: {}\t", clip_buffer);
-		fmt::print("It's {} valid\n", (isYouTube(clip_buffer) ? "" : "not"));
+		fmt::print("It's {}valid\n", (isYouTube(clip_buffer) ? "" : "not "));
 	}
 
 	return 0;
