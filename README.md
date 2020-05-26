@@ -20,4 +20,4 @@ None yet but probably:
 
 - [ ] Add Some Screenshots
 - [ ] Add Some More Options
-
+- [ ] Add Credits For Libraries
