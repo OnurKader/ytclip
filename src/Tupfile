@@ -1,7 +1,7 @@
 include_rules
 
 EXE := ../bin/ytclip
-CXX_LIBS += -lfmt -lX11 -ltiny-process-library -lpthread
+CXX_LIBS += -lfmt -lX11 -lpthread
 
 : foreach *.cpp | *.hpp |> !cxx |> {objs}
 : {objs} |> $(CXX) -o %o %f $(CXX_LIBS) $(CXX_FLAGS) -I../include |> $(EXE)

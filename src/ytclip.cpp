@@ -6,10 +6,9 @@
 #include <chrono>
 #include <climits>
 #include <csignal>
-#include <fmt/format.h>
-#include <fmt/printf.h>
+#include <fmt/format.hpp>
+#include <fmt/printf.hpp>
 #include <optional>
-#include <process.hpp>
 #include <string>
 #include <string_view>
 #include <thread>
@@ -20,15 +19,15 @@
 using namespace std::chrono_literals;
 using namespace ctre::literals;
 
-static Display *display = nullptr;
+static Display* display = nullptr;
 static Window window;
 
 // TODO: Design Choice!!! std::future std::async or popen()??
 // Maybe tiny-process-library?
 
-bool getSelection(const char *bufname, const char *fmtname, std::string &buff)
+bool getSelection(const char* bufname, const char* fmtname, std::string& buff)
 {
-	unsigned char *result = nullptr;
+	unsigned char* result = nullptr;
 	uint64_t ressize, restail;
 	int resbits;
 	Atom bufid = XInternAtom(display, bufname, False), fmtid = XInternAtom(display, fmtname, False),
@@ -98,7 +97,7 @@ void usage()
 			  << std::endl;
 }
 
-std::optional<std::string> getYouTubeID(const std::string &url)
+std::optional<std::string> getYouTubeID(const std::string& url)
 {
 	if(!isYouTube(url))
 		return std::nullopt;
@@ -123,9 +122,12 @@ std::optional<std::string> getYouTubeID(const std::string &url)
 	"http://www.duckduckgo.com/?q=youtube.com",
 	"https://duckduckgo.com/?q=https://www.youtube.com/"};
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
 	signal(SIGINT, handleInterrupt);
+
+	// FIXME: Put every unnecessary thing in a class, in their seperate headersi expecially cxxopts
+	// and the download stuff
 
 	// FIXME: Why don't I just store one vector and pass that to download?
 	std::vector<std::string> valid_url_vector;
@@ -155,13 +157,11 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	/*
-	TinyProcessLib::Process process1a("echo Hello World", "", [](const char *bytes, size_t n) {
+	TinyProcessLib::Process process1a("echo Hello World", "", [](const char* bytes, size_t n) {
 		std::string temp(bytes, n);
 		std::reverse(temp.begin(), temp.end());
 		fmt::print("Hello World : {}\n", temp);
 	});
-	*/
 
 	const std::string format = arg_result["format"].as<std::string>();
 	const std::string output = arg_result["output"].as<std::string>();
