@@ -58,7 +58,7 @@ int main(int argc, char** argv)
 		cxxopts::value<std::string>()->default_value("%(title)s.%(ext)s"))("h,help", "Print usage")(
 		"v,version", "Print usage");
 
-	auto arg_result = options.parse(argc, argv);
+	const auto arg_result = options.parse(argc, argv);
 
 	if(arg_result.count("help") || arg_result.count("version"))
 	{
