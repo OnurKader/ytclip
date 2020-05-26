@@ -1,16 +1,15 @@
 #pragma once
 
+#include "process.hpp"
+
 #include <cstdio>
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <unistd.h>
 #include <vector>
 
-class Downloader final
+struct Downloader final
 {
-public:
-private:
-	std::vector<std::pair<FILE*, pid_t>> m_processes;
+	explicit Downloader(const uint32_t);
+	void download(const char*) noexcept;
 
-	std::pair<FILE*, pid_t> init_download(const char*);
+	std::vector<Process> processes;
+	uint32_t thread_count;
 };
