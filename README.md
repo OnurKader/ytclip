@@ -18,7 +18,7 @@ None yet but probably:
 
 ### TODO
 
-[ ] Add Some Screenshots
+- [ ] Add Some Screenshots
 
-[ ] Add Some More Options
+- [ ] Add Some More Options
 
