@@ -1,16 +1,11 @@
 #include "ctre.hpp"
 #include "cxxopts.hpp"
 #include "download.hpp"
+#include "std-pch.hpp"
 #include "xclipboard.hpp"
 
-#include <array>
-#include <chrono>
 #include <fmt/format.hpp>
-#include <fmt/printf.hpp>
-#include <string>
-#include <string_view>
-#include <thread>
-#include <unordered_set>
+#include <fmt/ranges.hpp>
 
 using namespace std::chrono_literals;
 using namespace ctre::literals;
@@ -117,8 +112,7 @@ std::optional<std::string> get_youtube_id(const std::string_view url)
 
 	if(const auto match = ctre::match<R"(.+watch\?v=([a-zA-Z0-9\-_]+).*)">(url))
 	{
-		const auto str = match.get<1>().str();
-		return str;
+		return match.get<1>().str();
 	}
 
 	return std::nullopt;
