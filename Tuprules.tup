@@ -1,6 +1,5 @@
 CXX       := g++
-CXX_FLAGS := -Wall -Wextra -Wpedantic -Wshadow -O3 -flto -std=c++2a -Wsuggest-attribute=const -Wduplicated-branches -Wduplicated-cond -Wfloat-equal -Wcast-qual -Wmissing-declarations
-
-CXX_LIBS  :=
+CXX_FLAGS := -Wall -Wextra -Wpedantic -Wshadow -O3 -std=c++2a -Wsuggest-attribute=const -Wduplicated-branches -Wduplicated-cond -Wfloat-equal -Wcast-qual -Wmissing-declarations -Winvalid-pch
+CXX_LIBS  := -lfmt
 
 !cxx = |> $(CXX) -c %f -o %o $(CXX_LIBS) $(CXX_FLAGS) -I../include |> %B.o
